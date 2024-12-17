@@ -1,0 +1,24 @@
+Example on apple macbook to create human-readible adjacency file of all dual C_60 isomers.
+Note that in Buckygen the dual graph is the original fullerene, where all vertices have degree 3.
+In other words, by default Buckygen creates dual fullerenes, a.k.a. triangulations with degrees 5 and 6.
+
+(i) Create file with buckygen --> see file buckygen-guide.txt
+    For example:
+	
+		./buckygen 32 C_60_dual
+	
+	The computed data will be writte in a file "C_60_dual". This file is not readible for humans, and has to be processed using PLANARREAD. 
+
+(ii) Our slightly modification of planarread (just the output format to process the data leater easier) can be used with the following command:
+		
+		./planarread_mod <C_60_dual >C_60_dual_read.txt
+	
+	The now human-readable data is writen in the file "C_60_dual_read.txt". This file consists of iso(n)*(n/2+2)+1 rows, where the last row only says "done" and can be ignored.
+	Iso(n) is the amount of isomers in C_n, and (n/2+2) is the number of vertices in a dual fullerene in C_n.
+	
+
+For Windows users:
+Use WSL (Windows Subsystem for Linux) to run all codes as on a Mac or other Linux system.
+Do do so open command prompt and run a command as explained above in the following way:
+
+"Wsl ~ -e sh -c cd [folder path, e.g., /mnt/m/fullerene_data]; ./planarread_mod <[path to input file] >[path to output file]

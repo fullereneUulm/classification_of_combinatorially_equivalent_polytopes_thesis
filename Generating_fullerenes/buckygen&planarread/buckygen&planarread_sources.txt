@@ -1,0 +1,11 @@
+Original buckygen algorithm is available here:
+https://caagt.ugent.be/buckygen/
+
+Original planarread code is available here:
+https://houseofgraphs.org/help#format_pc
+
+Linux code: 
+https://houseofgraphs.org/data/generators/decoders/planarread
+
+Mac OS X:
+https://houseofgraphs.org/data/generators/decoders/planarread-mac
