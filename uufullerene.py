@@ -1,5 +1,6 @@
 # uufullerene.py module
 
+# Anke ist toll
 import numpy as np
 import networkx as nx
 import scipy.special as sc
