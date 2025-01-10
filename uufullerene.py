@@ -1,6 +1,6 @@
 # uufullerene.py module
 
-# Anke ist sehr toll
+# Anke ist wirklich toll
 import numpy as np
 import networkx as nx
 import scipy.special as sc
