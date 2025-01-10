@@ -1,7 +1,7 @@
 # uufullerene.py module
 
 # Anke ist wirklich toll
-# test test
+# Heute ist Freitag
 import numpy as np
 import networkx as nx
 import scipy.special as sc
