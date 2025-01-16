@@ -41,19 +41,81 @@ def multinomial(params):
         return 1
     return binom(sum(params), params[-1]) * multinomial(params[:-1])
 
-### Factorial with special case of negative argument ###
 def factorial(k):
-    if k<0:
-        return np.inf
-    else: 
-        return math.factorial(k)
+    """
+    Compute the factorial of a number with a special case for negative inputs.
+    
+    Parameters:
+        k (int): The input number.
+    
+    Returns:
+        int or float: Factorial of k if k >= 0, otherwise infinity.
+    """
+    return math.factorial(k) if k >= 0 else np.inf
 
-### Check whether a matrix A is symmetric ###
-def is_symmetric(A):
-    if np.sum(A==np.transpose(A))==A.shape[0]**2:
-        return 1
-    else:
-        return 0
+def is_dual_fullerene(A):
+    """
+    Check if the input adjacency matrix A represents a dual fullerene graph.
+    
+    Parameters:
+        A (numpy.ndarray): The adjacency matrix of the graph.
+    
+    Returns:
+        bool: True if A represents a dual fullerene graph, False otherwise.
+    """
+    m = A.shape[0]  # Number of vertices
+    n = 2 * (m - 2)  # Number of faces in the dual fullerene graph
+    
+    # Calculate vertex degrees
+    degrees = A.sum(axis=0)
+    
+    # Check symmetry condition and ensure it's binary
+    if not np.allclose(A, A.T) or not np.all((A == 0) | (A == 1)):
+        return False
+
+    # Check the conditions for a dual fullerene
+    return (
+        A.sum() == 3 * n  # Total edge count matches 3n/2
+        and (degrees == 5).sum() == 12  # Exactly 12 pentagons
+        and (degrees == 6).sum() == (m - 12)  # Remaining vertices are hexagons
+    )
+
+def pentagon_vector_to_A(p_v, m):
+    """
+    Build the adjacency matrix of a dual fullerene graph based on its pentagonal vector p_v
+    and the number of vertices m = n/2 + 2.
+
+    Parameters:
+    - p_v: A vector of length 12 with the positions of each pentagon in the face spiral.
+    - m: Number of vertices in the graph.
+
+    Returns:
+    - A: The adjacency matrix of the dual fullerene graph.
+    """
+    # Initialize adjacency matrix and degree vector
+    A = np.zeros((m, m), dtype=int)
+    d_v = np.full(m, 6, dtype=int)
+    d_v[p_v] = 5  # Set degrees for pentagonal vertices
+
+    # Build the initial linear chain
+    A[np.arange(m - 1), np.arange(1, m)] = 1
+    A += A.T
+
+    # Add additional edges to satisfy degree constraints
+    j = 1  # Start connecting from vertex 1
+    for i in range(m - 1):
+        d_i = d_v[i]
+        while A[i].sum() < d_i:
+            # Check if the next vertex can still connect without exceeding its degree
+            if A[i + 1].sum() < d_v[i + 1]:
+                A[i, i + 2] = A[i + 2, i] = 1  # Add diagonal connection
+            else:
+                # Connect to the next available vertex (j) that can accept more edges
+                while A[j].sum() >= d_v[j]:
+                    j += 1
+                A[i, j] = A[j, i] = 1
+
+    return A
 
 ########################################## Hexagonal and triangular lattices ###########################################################################
 ### Create the adjacency matrix A of a triangulation, without loops, where vertices are enumerated according to the spiral method ####
@@ -189,6 +251,59 @@ def A_shifted(A,p):
         P[i,int(p_vec[i])] = 1
     return np.matmul(A,P)
     
+### Generate Goldberg polyhedron #######
+def GP(p, q):
+    """
+    Construct the pentagon vector of a dual Goldberg polyhedra GP(p, q)
+    and use the function pentagon_vector_to_A to construct the corresponding adjacency matrix.
+
+    Parameters:
+    p (int): Parameter for the Goldberg polyhedra.
+    q (int): Parameter for the Goldberg polyhedra.
+
+    Returns:
+    numpy.ndarray: Adjacency matrix of the dual Goldberg polyhedra, or -1 for invalid input.
+    """
+    T = (p + q) ** 2 - p * q
+    n = 20 * T
+    m = n // 2 + 2
+
+    # Case (i): Zigzag tubes (q = 0)
+    if p != 0 and q == 0:
+        pv = [0] * 12
+        pv[1] = p * (5 * p - 3) // 2
+
+        for i in range(2, 6):
+            pv[i] = pv[i - 1] + p
+
+        pv[6] = (5 * (p - 1) * p // 2) + 5 * p + (p - 1) * 5 * p + p
+        pv[-1] = m - 1
+
+        for i in range(7, 11):
+            pv[i] = pv[i - 1] + p
+
+        return pentagon_vector_to_A(pv, m)
+
+    # Case (ii): Armchair tubes (p = q)
+    elif p == q:
+        pv = [0] * 12
+        pv[1] = 10 * p ** 2 - 4 * p
+
+        for i in range(2, 6):
+            pv[i] = pv[i - 1] + 2 * p
+
+        pv[-1] = m - 1
+        pv[-2] = pv[-1] - (10 * p ** 2 - 5 * p + 1)
+
+        for i in range(1, 5):
+            pv[10 - i] = pv[10 - (i - 1)] - 2 * p
+
+        return pentagon_vector_to_A(pv, m)
+
+    # Case (iii): Invalid input
+    else:
+        return -1
+
 ################################ Adjacency and Degree matrices of diffferent graphs and lattices ################################## 
 
     
@@ -569,3 +684,90 @@ def partition_freq(n):
     for i in range(iso):
         result[find_partition(pentagon_cluster(A_tensor[:,:,i]),pt)] += 1
     return result
+
+################## Stone-Wales operations ######################  
+
+def radial_gSW_segments(A):
+    '''
+    Computes the indices of vertices of the fragment needed for a radial gSW operation
+    according to "Generalized Stone-Wales Transformation for Fullerene Graphs Derived from Berge’s Switching Theorem" by Ori et al.
+
+    Input: 
+        - A (2-dimensional np.array): Adjacency matrix of a dual fullerene graph
+
+    Output:
+        - eta_pivot_penta_hexa_internal (2-dimensional np.array): Matrix of dimension (# fragments needed for radial gSW on the fullerene)
+                                                                  x (5 + #internal hexagons in the fragment), where the first five entries stay for:
+                                                                   (i) eta
+                                                                   (ii) 1. pivotal pentagon
+                                                                   (iii) 2. pivotal pentagon
+                                                                   (iv) 1. pivotal hexagona
+                                                                   (v) 2. pivotal hexagon
+    '''
+    m = A.shape[0]
+    penta_indices = np.where(np.sum(A, axis=0) == 5)[0]
+    hexa_indices = np.where(np.sum(A, axis=0) == 6)[0]
+    G = nx.Graph(A)
+    G6 = G.subgraph(hexa_indices)
+    eta_pivot_penta_hexa_internal = []
+
+    # Define a function to construct H for given eta
+    def construct_hexagonal_subgraph(eta):
+        size = eta**2 + 2
+        H = np.zeros((size, size))
+        for j in range(eta):
+            for jj in range(eta - 1):
+                idx = j * eta + jj
+                H[idx, idx + 1] = H[idx + 1, idx] = 1  # Horizontal edges
+            if j < eta - 1:
+                for jj in range(eta):
+                    idx = j * eta + jj
+                    H[idx, idx + eta] = H[idx + eta, idx] = 1  # Vertical edges
+                    if jj > 0:
+                        H[idx, idx + eta - 1] = H[idx + eta - 1, idx] = 1  # Diagonal edges
+                    if jj < eta - 1:
+                        H[idx, idx + eta + 1] = H[idx + eta + 1, idx] = 1
+        # Add edges for the pivotal vertices
+        H[eta - 1, size - 2] = H[size - 2, eta - 1] = 1
+        H[eta**2 - eta, size - 1] = H[size - 1, eta**2 - eta] = 1
+        return H, np.arange(eta**2), size - 2, size - 1
+
+    eta = 0
+    while eta**2 + 2 <= m - 12:
+        print(f"Start eta = {eta}")
+        H, internal_vertices_H, h1_in_H, h2_in_H = construct_hexagonal_subgraph(eta)
+        H_graph = nx.Graph(H)
+
+        # Check for subgraph isomorphisms
+        matcher = isomorphism.GraphMatcher(G6, H_graph)
+        if matcher.subgraph_is_isomorphic():
+            mappings = matcher.subgraph_isomorphisms_iter()
+            for mapping in mappings:
+                reversed_mapping = {v: k for k, v in mapping.items()}
+                h1_in_G, h2_in_G = reversed_mapping.get(h1_in_H), reversed_mapping.get(h2_in_H)
+                if h1_in_G is None or h2_in_G is None:
+                    continue
+                internal_in_G = [reversed_mapping[i] for i in internal_vertices_H]
+
+                # Validate conditions
+                if (A[h1_in_G, h2_in_G] == 0 and
+                    h1_in_G in hexa_indices and h2_in_G in hexa_indices and
+                    len(np.intersect1d(internal_in_G, hexa_indices)) == eta**2 and
+                    not any(A[p, internal_in_G].sum() > 0 for p in penta_indices)):
+                    
+                    # Check pivotal pentagons
+                    sp_h1 = nx.single_source_shortest_path_length(G, h1_in_G)
+                    sp_h2 = nx.single_source_shortest_path_length(G, h2_in_G)
+                    pentagons_h1 = [node for node, dist in sp_h1.items() if dist == eta + 1 and node in penta_indices]
+                    pentagons_h2 = [node for node, dist in sp_h2.items() if dist == eta + 1 and node in penta_indices]
+                    pivotal_pentagons = np.intersect1d(pentagons_h1, pentagons_h2)
+
+                    if len(pivotal_pentagons) == 2:
+                        eta_pivot_penta_hexa_internal.append(
+                            [eta, pivotal_pentagons[0], pivotal_pentagons[1], h1_in_G, h2_in_G, *internal_in_G]
+                        )
+        print(f"Eta = {eta} done. Total fragments: {len(eta_pivot_penta_hexa_internal)}")
+        eta += 1
+
+    return eta_pivot_penta_hexa_internal                
+ 
