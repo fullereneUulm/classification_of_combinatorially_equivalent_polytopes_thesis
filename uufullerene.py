@@ -7,7 +7,10 @@ import matplotlib.pyplot as plt
 import math 
 import os
 import networkx as nx
-
+import plotly.express as px
+import plotly.graph_objects as go
+import plotly.io as pio
+import plotly.offline as pyo
 path_database = "/Volumes/StochaExt/fullerene_database/buckygen"
 path_buckygen = "/Users/arturbille/Documents/forschung/BuckyGen/buckygen"
 path_planarread = "/Users/arturbille/Documents/forschung/BuckyGen/planarread_mod"
@@ -32,9 +35,16 @@ def binom(n, k):
 
 ### Multinomial coefficient using function binom ####
 def multinomial(params):
-    #Summary: Compute the multinomial coefficient k!/(k_1!*k_2!*k_3!*....*k_len(params)!) using recursion formula for
-    #         factorial
-    #Input: params=[k_1,...,k_len(params)]
+    """
+    Compute the multinomial coefficient k!/(k_1!*k_2!*k_3!*....*k_len(params)!) using recursion formula for
+    factorial
+    
+    Parameters: 
+        params (int)=[k_1,...,k_len(params)]
+
+    Returns:
+        #####TODO
+    """
     if len(params) == 1:
         return 1
     return binom(sum(params), params[-1]) * multinomial(params[:-1])
@@ -51,6 +61,40 @@ def factorial(k):
     """
     return math.factorial(k) if k >= 0 else np.inf
 
+def choose_x_real():
+    """
+    Scale and shift factors, i.e., x is randomly chosen in [-shift,scale-shift]
+    #####TODO: vllt optionale Parameter für shift& scale?
+    """
+    scale = 5
+    shift = 2.5
+    return np.random.rand(1)[0]*scale-shift
+
+def choose_x_complex():
+    """
+    Scale and shift factors, i.e., a complex x is chosen with Re(x) and Im(x) in [-shift,scale-shift]
+    """
+    
+    scale = 5
+    shift = 2.5
+    return np.random.rand(1)[0]*scale-shift+1j*(np.random.rand(1)[0]*scale-shift)
+
+def check(func_lhs,func_rhs):
+    """
+    Compute the value of two given functions at a random point x and additionally prints the absolute distance between 
+    the two results.
+
+    Parameters:
+        func_lhs, func_rhs: two functions in x.
+    """
+    x = choose_x() #####TODO: Ist hier choose_x_real gemeint? Oder ist das eine bereits existente Funktion?
+    print("x =",x)
+    res1 = func_lhs(x)
+    res2 = func_rhs(x)
+    print("Left-hand side: ",res1)
+    print("Right-hand side: ",res2)
+    print("Absolute Error: ",abs(res1-res2))
+    
 def is_dual_fullerene(A):
     """
     Check if the input adjacency matrix A represents a dual fullerene graph.
@@ -116,7 +160,8 @@ def pentagon_vector_to_A(p_v, m):
     return A
 
 ########################################## Hexagonal and triangular lattices ###########################################################################
-### Create the adjacency matrix A of a triangulation, without loops, where vertices are enumerated according to the spiral method ####
+
+### Create the adjacency matrix A of a triangulation, without loops, where vertices are enumerated according to the spiral method ####  
 def create_A(size_param, method="spiral"):
     # r = number of rings around origin
     # 1+3*r*(r+1) is the number of vertices in this cutout
