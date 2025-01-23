@@ -25,6 +25,15 @@ golden_ratio = (1 + 5 ** 0.5) / 2
 
 ### Binomial coefficient with special cases ### 
 def binom(n, k):
+    """
+    Compute the binomial coefficient of n& k, paying attention to special cases.
+
+    Parameters:
+        n, k (int)
+        
+    Returns: 
+        int: The binomial coefficient (n over k).
+    """
     if k < 0 or k > n:
         return 0
     if k > n - k:
@@ -32,6 +41,7 @@ def binom(n, k):
     if k == 0 or n <= 1:
         return 1
     return binom(n - 1, k) + binom(n - 1, k - 1)
+
 
 ### Multinomial coefficient using function binom ####
 def multinomial(params):
@@ -49,6 +59,7 @@ def multinomial(params):
         return 1
     return binom(sum(params), params[-1]) * multinomial(params[:-1])
 
+
 def factorial(k):
     """
     Compute the factorial of a number with a special case for negative inputs.
@@ -61,6 +72,7 @@ def factorial(k):
     """
     return math.factorial(k) if k >= 0 else np.inf
 
+
 def choose_x_real():
     """
     Scale and shift factors, i.e., x is randomly chosen in [-shift,scale-shift]
@@ -69,6 +81,7 @@ def choose_x_real():
     scale = 5
     shift = 2.5
     return np.random.rand(1)[0]*scale-shift
+
 
 def choose_x_complex():
     """
@@ -79,13 +92,14 @@ def choose_x_complex():
     shift = 2.5
     return np.random.rand(1)[0]*scale-shift+1j*(np.random.rand(1)[0]*scale-shift)
 
+
 def check(func_lhs,func_rhs):
     """
     Compute the value of two given functions at a random point x and additionally prints the absolute distance between 
     the two results.
 
     Parameters:
-        func_lhs, func_rhs: two functions in x.
+        func_lhs, func_rhs: Two functions in x.
     """
     x = choose_x() #####TODO: Ist hier choose_x_real gemeint? Oder ist das eine bereits existente Funktion?
     print("x =",x)
@@ -94,6 +108,71 @@ def check(func_lhs,func_rhs):
     print("Left-hand side: ",res1)
     print("Right-hand side: ",res2)
     print("Absolute Error: ",abs(res1-res2))
+
+
+def arcsin_sample(a,b,N):
+    """
+    Return N samples of a random variable following the arcsin--distribution. 
+     --> https://en.wikipedia.org/wiki/Arcsine_distribution
+    Parameters:
+        a: Left endpoint of the distributions support.
+        b: Right endpoint of the distributions support.
+        N: Number of requested samples.
+    Returns:
+        int or float: N samples following the arcsin--distribution.
+    """
+    u_sample = np.random.rand(N)
+    return (b-a)*np.sin(u_sample*np.pi/2)**2+a
+
+
+def Lambda_pq_star_sample(p,q,N):
+    """
+    Return N samples of the random eigenvalue whose distribution is given in Paper 3 Nanotubes, Corollary 1 (i).
+
+    Parameters:
+        p:
+        q:
+        N: Number of requested samples.
+
+    Returns:
+        int or float: N samples following this distribution.
+    """
+    U = np.random.uniform(0,np.pi,N)
+    J = np.random.randint(0, high = p+q, size = N)
+    return 3+2*(np.cos(U) + np.cos((p*U+2*np.pi*J)/(p+q)) + np.cos((q*U-2*np.pi*J)/(p+q)))
+
+
+def Lambda_p0_star_sample(p,N):
+    """
+    Return N samples of the random eigenvalue whose distribution is given in Paper 3 Nanotubes, Corollary 1 (i).
+
+    Parameters:
+        p:
+        N: Number of requested samples.
+
+    Returns:
+        int or float: N samples following this distribution.
+    """
+    J0 = np.random.randint(0,p,N)
+    V = np.sin(np.pi*np.random.uniform(0,1,N)/2)
+    return 4*V**2*(1+np.cos(2*np.pi*J0/p)) - 4*V*np.sqrt(1-V**2)*np.sin(2*np.pi*J0/p) + 1
+
+
+def Lambda_pp_star_sample(p,N):
+    """
+    Return N samples of the random eigenvalue whose distribution is given in Paper 3 Nanotubes, Corollary 1 (ii).
+
+    Parameters:
+        p:
+        N: Number of requested samples.
+
+    Returns:
+        int or float: N samples following this distribution.
+    """
+    Jp = np.random.randint(0,2*p,N)
+    V = np.sin(np.pi*np.random.uniform(0,1,N)/2)
+    return 4*V**2 + 4*np.cos(np.pi*Jp/p)*V+1
+
     
 def is_dual_fullerene(A):
     """
@@ -411,6 +490,18 @@ def f(k1,k):
 ################################################# Construction of adjacency matrix #################################################
 
 def ring(r):
+"""
+Create an adjacency matrix of one ring with r vertices.
+Example: ring(3) -> array([[0., 1., 1.],
+                           [1., 0., 1.],
+                           [1., 1., 0.]])
+
+Parameters:
+    r: positive int >=3, number of vertices.
+
+Returns: 
+    result: The adjacency matrix. 
+"""
     if r<3:
         print("A ring needs at least three vertices, i.e., r>2.")
         return -1
@@ -423,6 +514,15 @@ def ring(r):
     return result
 
 def ring_connection(r):
+"""
+Create the adjacency matrix of r connected rings.
+
+Parameters:
+    r: Number of hexagonal rings.
+
+Returns: 
+    result: The adjacency matrix. 
+"""
     result = np.eye(r)
     for i in range(1,r):
         result[i,i-1] = 1
@@ -430,6 +530,15 @@ def ring_connection(r):
     return result
 
 def tube(r,n):
+"""
+Create the adjacency matrix of a nanotube with r hexagonal rings.
+
+Parameters:
+    r: Number of hexagonal rings.
+
+Returns: 
+    result: The adjacency matrix. 
+"""
     if n<2:
         return ring(r)
     else:
