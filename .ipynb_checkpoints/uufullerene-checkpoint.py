@@ -7,6 +7,12 @@ import matplotlib.pyplot as plt
 import math 
 import os
 import networkx as nx
+import itertools
+import pickle
+from scipy.linalg import expm
+from IPython.display import display, HTML
+from plotly.subplots import make_subplots
+import plotly
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
@@ -15,7 +21,18 @@ path_database = "/Volumes/StochaExt/fullerene_database/buckygen"
 path_buckygen = "/Users/arturbille/Documents/forschung/BuckyGen/buckygen"
 path_planarread = "/Users/arturbille/Documents/forschung/BuckyGen/planarread_mod"
 
+#Template for function-descriptions:
+    '''
+    Compute
 
+    Parameters:
+        -
+        -
+
+    Returns:
+        -
+        -
+    '''
 ################################################# Constants ################################################# 
 
 ### Golden Ratio ###
@@ -50,7 +67,7 @@ def multinomial(params):
     factorial
     
     Parameters: 
-        params (int)=[k_1,...,k_len(params)]
+        params (int): [k_1,...,k_len(params)]
 
     Returns:
         #####TODO
@@ -114,10 +131,12 @@ def arcsin_sample(a,b,N):
     """
     Return N samples of a random variable following the arcsin--distribution. 
      --> https://en.wikipedia.org/wiki/Arcsine_distribution
+     
     Parameters:
-        a: Left endpoint of the distributions support.
-        b: Right endpoint of the distributions support.
-        N: Number of requested samples.
+        a (int or float): Left endpoint of the distributions support.
+        b (int or float): Right endpoint of the distributions support.
+        N (int): Number of requested samples.
+        
     Returns:
         int or float: N samples following the arcsin--distribution.
     """
@@ -130,9 +149,9 @@ def Lambda_pq_star_sample(p,q,N):
     Return N samples of the random eigenvalue whose distribution is given in Paper 3 Nanotubes, Corollary 1 (i).
 
     Parameters:
-        p:
+        p: #####TODO
         q:
-        N: Number of requested samples.
+        N (int): Number of requested samples.
 
     Returns:
         int or float: N samples following this distribution.
@@ -147,8 +166,8 @@ def Lambda_p0_star_sample(p,N):
     Return N samples of the random eigenvalue whose distribution is given in Paper 3 Nanotubes, Corollary 1 (i).
 
     Parameters:
-        p:
-        N: Number of requested samples.
+        p: #####TODO
+        N (int): Number of requested samples.
 
     Returns:
         int or float: N samples following this distribution.
@@ -163,8 +182,8 @@ def Lambda_pp_star_sample(p,N):
     Return N samples of the random eigenvalue whose distribution is given in Paper 3 Nanotubes, Corollary 1 (ii).
 
     Parameters:
-        p:
-        N: Number of requested samples.
+        p: #####TODO
+        N (int): Number of requested samples.
 
     Returns:
         int or float: N samples following this distribution.
@@ -207,11 +226,11 @@ def pentagon_vector_to_A(p_v, m):
     and the number of vertices m = n/2 + 2.
 
     Parameters:
-    - p_v: A vector of length 12 with the positions of each pentagon in the face spiral.
-    - m: Number of vertices in the graph.
+    - p_v (numpy.ndarray): A vector of length 12 with the positions of each pentagon in the face spiral.
+    - m (int): Number of vertices in the graph.
 
     Returns:
-    - A: The adjacency matrix of the dual fullerene graph.
+    - A (numpy.ndarray): The adjacency matrix of the dual fullerene graph.
     """
     # Initialize adjacency matrix and degree vector
     A = np.zeros((m, m), dtype=int)
@@ -240,8 +259,17 @@ def pentagon_vector_to_A(p_v, m):
 
 ########################################## Hexagonal and triangular lattices ###########################################################################
 
-### Create the adjacency matrix A of a triangulation, without loops, where vertices are enumerated according to the spiral method ####  
 def create_A(size_param, method="spiral"):
+    '''
+    Create the adjacency matrix A of a triangulation, without loops, where vertices are enumerated according to the spiral method.
+
+    Parameters:
+        -size_param: #####TODO
+        -method (optional str): The default is "spiral".
+
+    Returns:
+        A (numpy.ndarray): The adjacency matrix of a triangulation.
+    '''
     # r = number of rings around origin
     # 1+3*r*(r+1) is the number of vertices in this cutout
     method_list = ["LLUR","spiral"]
@@ -349,13 +377,21 @@ def create_A(size_param, method="spiral"):
                     j -= 1
         return A
 
-### Shift a given adjacency matrix A by p, where p is the shiftvalue wrt. the x-axis on the triangular lattice
 def A_shifted(A,p):
+    '''
+    Shift a given adjacency matrix A by p, where p is the shiftvalue wrt. the x-axis on the triangular lattice.
+
+    Parameters:
+        -A (numpy.ndarray): A matrix.
+        -p (int): The shiftvalue.
+
+    Returns:
+        numpy.ndarray: The shifted matrix.
+    '''
     #Total number of vertices
     n = np.shape(A)[0]
     #Number of rows/columns in the lattice cutout
     nrow = int(np.sqrt(n))
-    #print(nrow)
     #Order of permuted columns 
     p_vec = np.zeros(n)
     i = 0
@@ -428,15 +464,31 @@ def GP(p, q):
 
 ################################ Adjacency and Degree matrices of diffferent graphs and lattices ################################## 
 
-    
-
-### Compute linear combination alpha*A+beta*D of a adjacency matrix A ### 
 def L(A,alpha = 1,beta = 0.5):
+    '''
+    Compute linear combination alpha*A+beta*D of a adjacency matrix A.
+
+    Parameters:
+        -A (numpy.ndarray): A matrix.
+        -alpha (int or float)
+        -beta (int or float)
+
+    Returns:
+        numpy.ndarray: alpha*A+beta*D
+    '''
     return alpha*A + beta*np.diag(np.sum(A,axis=0))    
 
 ################################################# Densities of random eigenvalues ################################################# 
-### Density function of T* (i.e., the triangulation with loops of weight 3)
 def fT(x):
+    '''
+    Compute the density function of T* (i.e., the triangulation with loops of weight 3).
+
+    Parameters:
+        x (int or float): The point at which the density function is evaluated.
+
+    Returns:
+        int or float: The value of the density function of T* at x.
+    '''
     if 0<x and x<9:
         return np.sqrt(3)/(np.pi*(3+x))*sc.hyp2f1(1/3, 2/3, 1, (x*(9-x)**2)/(3+x)**3)
     else:
@@ -444,6 +496,7 @@ def fT(x):
 
 ################################################# Moments #################################################
 ################################################# Direct way to compute the sum of squared multinomials #################################################
+
 def a(k):
     result = 0
     for k1 in range(k+1):
@@ -451,8 +504,16 @@ def a(k):
             result += multinomial([k1,k2,k-k1-k2])**2
     return result
 
-### Compute the kth moment of H (random eigenvalue of the hexagonal lattice) ###
 def moment_H(k):
+    '''
+    Compute the k-th moment of H (random eigenvalue of the hexagonal lattice).
+
+    Parameters:
+        k (int)
+
+    Returns:
+        result (int): The k-th moment.
+    '''
     if np.mod(k,2)==1:
         return 0
     else:
@@ -462,27 +523,54 @@ def moment_H(k):
                 result += multinomial([k1,k2,k/2-k1-k2])**2
         return result
 
-### Compute the kth moment of H_tilde (normalized on [0,1] random eigenvalue of the hexagonal lattice) ###
+
 def moment_H_tilde(k):
+    '''
+    Compute the k-th moment of H_tilde (normalized on [0,1] random eigenvalue of the hexagonal lattice).
+
+    Parameters:
+        k (int)
+
+    Returns:
+        result (int): The k-th moment.
+    '''
     result=0
     for j in range(k+1):
         result += 1/6**k*binom(k,j)*3**(k-j)*moment_H(j)
     return result
 
-### Compute the kth moment of T (random eigenvalue of the triangular lattice) ###
+
 def moment_T(k):
+    '''
+    Compute the k-th moment of T (random eigenvalue of the triangular lattice).
+
+    Parameters:
+        k (int)
+
+    Returns:
+        result (int): The k-th moment.
+    '''
     result=0
     for k1 in range(k+1):
         for k2 in range(k-k1+1):
             result += multinomial([k1,k2,k-k1-k2])**2
     return result
 
-### Compute the kth moment of T (random eigenvalue of the triangular lattice) normalized and centralized on [0,1] ###
 def moment_T_tilde(k):
+    '''
+    Compute the k-th moment of T (random eigenvalue of the triangular lattice) normalized and centralized on [0,1].
+
+    Parameters:
+        k (int)
+
+    Returns:
+        result (int): The k-th moment.
+    '''
     return 1/9**k*moment_T(k)    
 
   
 def f(k1,k):
+    #####TODO what dis doin?
     return 2*math.factorial(k-k1)**2/math.factorial(2*(k-k1))*binom(2*k1,k1+5)*hyper([1,(5-k1)/5,(6-k1)/5,(7-k1)/5,(8-k1)/5,(9-k1)/5],[(6+k1)/5,(7+k1)/5,(8+k1)/5,(9+k1)/5,(10+k1)/5],-1)
 
 
@@ -497,10 +585,10 @@ Example: ring(3) -> array([[0., 1., 1.],
                            [1., 1., 0.]])
 
 Parameters:
-    r: positive int >=3, number of vertices.
+    r (int): positive, >=3, number of vertices.
 
 Returns: 
-    result: The adjacency matrix. 
+    result (numpy.ndarray): The adjacency matrix. 
 """
     if r<3:
         print("A ring needs at least three vertices, i.e., r>2.")
@@ -518,10 +606,10 @@ def ring_connection(r):
 Create the adjacency matrix of r connected rings.
 
 Parameters:
-    r: Number of hexagonal rings.
+    r (int): Number of hexagonal rings.
 
 Returns: 
-    result: The adjacency matrix. 
+    result (numpy.ndarray): The adjacency matrix. 
 """
     result = np.eye(r)
     for i in range(1,r):
@@ -534,10 +622,10 @@ def tube(r,n):
 Create the adjacency matrix of a nanotube with r hexagonal rings.
 
 Parameters:
-    r: Number of hexagonal rings.
+    r (int): Number of hexagonal rings.
 
 Returns: 
-    result: The adjacency matrix. 
+    result (numpy.ndarray): The adjacency matrix. 
 """
     if n<2:
         return ring(r)
@@ -556,8 +644,16 @@ Returns:
     return result
 
 ################################################# Moments #################################################
-### Compute the k-th moment of a dual (p,q)--nanotube ###
 def moment_dual_nanotube(p,q,k):
+    '''
+    Compute the k-th moment of a dual (p,q)--nanotube
+
+    Parameters:
+        p, q, k (int)
+
+    Returns:
+        result (int): The k-th moment.
+    '''
     result = 0
     for k1 in range(k + 1):
         for k2 in range(k - k1 + 1):
@@ -568,11 +664,28 @@ def moment_dual_nanotube(p,q,k):
             result += multinomial([k1,k2,k3])**2*(1+2*inner_sum)
     return int(np.round(result))
     
-### Compute the k-th moment of a dual (p,q)--nanotube normalized and centralized on [0,1] ###
 def moment_dual_nanotube_tilde(p,q,k):
+    '''
+    Compute the k-th moment of a dual (p,q)--nanotube normalized and centralized on [0,1].
+
+    Parameters:
+        p, q, k (int)
+
+    Returns:
+        result (int): The k-th moment.
+    '''
     return 1/9**k*moment_N_pq(p,q,k)
     
 def moment_N_50_1(k):
+    '''
+    #####TODO: Was wird hier und in den nächsten Funktion berechnet?
+
+    Parameters:
+        k (int)
+
+    Returns:
+        result (int): The k-th moment.
+    '''
     result = 0
     for k1 in range(k+1):
         inner_sum=0
@@ -583,6 +696,14 @@ def moment_N_50_1(k):
     return int(np.round(result))
 
 def moment_N_50_2(k):
+    '''
+
+    Parameters:
+        k (int)
+
+    Returns:
+        result (int): The k-th moment.
+    '''
     result = 0
     for k1 in range(k+1):
         inner_sum=0
@@ -593,6 +714,13 @@ def moment_N_50_2(k):
     return result
 
 def moment_N_50_3(k):
+    '''
+    Parameters:
+        k (int)
+
+    Returns:
+        result (int): The k-th moment.
+    '''
     result = 0
     for k1 in range(k+1):
         temp = f(k1,k)
@@ -601,10 +729,26 @@ def moment_N_50_3(k):
     return result
 
 def moment_N_50_tilde(k):
+    '''
+    Compute --- normalized and centralized on [0,1].
+
+    Parameters:
+        k (int)
+
+    Returns:
+        int or float: The normalized k-th moment.
+    '''
     return 1/9**k*moment_N_50_3(k)
 
 
 def A_test(A):
+    '''
+    Parameters:
+        A (numpy.ndarray): A matrix.
+
+    Returns:
+        boo: True if all tests were successful, False otherwise.
+    '''
     boo = True
     n = 2*(A.shape[0]-2)
     if np.sum(A)!=3*n:
@@ -618,7 +762,15 @@ def A_test(A):
         #print('Test 3 failed')
     return boo
 	
-def spiral_to_A(n,penta_indexes,to_print=False):
+def spiral_to_A(n,penta_indexes):
+    '''
+    Parameters:
+        -A (numpy.ndarray)
+        -penta_indexes (array of int)
+
+    Returns:
+        A (numpy.ndarray)
+    '''
     m = int(n/2+2)
     A = np.zeros((m,m))
 
@@ -629,7 +781,6 @@ def spiral_to_A(n,penta_indexes,to_print=False):
             free_edge_counter[i] = 5
         else:
             free_edge_counter[i] = 6
-    ####print(Free_edge_counter)
     #Spiral conjecture statement (1):
     # Each new face in the spiral after the second shares an edge with both its immediate predecessor in the spiral and ....
     for i in range(m-1):
@@ -638,7 +789,6 @@ def spiral_to_A(n,penta_indexes,to_print=False):
     free_edge_counter[0] = free_edge_counter[0]-1
     free_edge_counter[-1] = free_edge_counter[-1]-1
     free_edge_counter[1:-1] = free_edge_counter[1:-1]-2
-    ####print(Free_edge_counter)
 
 
     #Spiral conjecture statement (2):
@@ -653,8 +803,6 @@ def spiral_to_A(n,penta_indexes,to_print=False):
 
         # Basic step
         if free_edge_counter[new_face]>0 and free_edge_counter[open_face]>0 and A[new_face,open_face]==0:
-            #if to_print:
-                #print(new_face,open_face)
             A[new_face,open_face] = 1
             A[open_face,new_face] = 1
             free_edge_counter[new_face] -= 1
@@ -668,17 +816,11 @@ def spiral_to_A(n,penta_indexes,to_print=False):
                 for i in range(new_face+1,m-2):
                     if free_edge_counter[i]==0 and len(np.where(free_edge_counter[0:i]>0)[0])>0 and len(np.where(free_edge_counter[i:m]>0)[0])>0:
                         # Find largest precursor and smallest successor who are both not complete:
-                        #print(i)
                         max_pre = np.max(np.where(free_edge_counter[0:i]>0)[0])
                         min_suc = i + np.min(np.where(free_edge_counter[i:m]>0)[0])
                         if A[max_pre,min_suc]==0:
-                            #if to_print:
-                            #    print('Case: Cut corner')
-                            #    print(max_pre,min_suc)
                             cuts[min_suc,:] = int(np.min([max_pre,cuts[min_suc,0]])),int(min_suc)
                             cuts_counter += 1
-                            #if to_print:
-                            #    print('----------------')
                             A[max_pre,min_suc] = 1
                             A[min_suc,max_pre] = 1
                             free_edge_counter[max_pre] -= 1
@@ -694,46 +836,36 @@ def spiral_to_A(n,penta_indexes,to_print=False):
     
     left_overs = np.where(free_edge_counter)[0]
     if len(left_overs)==2:
-    #    if to_print:
-    #        print(left_overs[0],left_overs[1])
         A[left_overs[0],left_overs[1]] = 1
         A[left_overs[1],left_overs[0]] = 1
         free_edge_counter[left_overs[0]] -= 1
         free_edge_counter[left_overs[1]] -= 1
-    #if to_print:
-    #    print(A_test(A))
     return A
-
-def character(A,alpha,beta):
-    D = np.diag(np.sum(A,axis=0))
-    return np.trace(expm(alpha*A+beta*D))
-
-def adjacencyTn6(A):
-    hexagon_indices = np.where(np.sum(A,axis=0)==6)[0]
-    A6 = A[hexagon_indices,:]
-    A6 = A6[:,hexagon_indices]
-    return A6
-    
-    
     
 ######################## Pentagon cluster analysis #######################################
-### Create a readible and comprehensed version of all adjacency matrices of C_n
 def run_bucky_planarread(n, dual = True, readable = False):
+    '''
+    Create a readible and comprehensed version of all adjacency matrices of C_n.
+
+    Parameters:
+        -n (int)
+        -dual, readable (optional boolean)
+    '''
     
-    #Check whether unreadible file already exists
+    #Check whether unreadable file already exists
     if os.path.exists(path_database + "/C" + str(n) + "_dual.gz"):
         print("Requested file does already exist in " + path_database)
     else:
-        #Create unreadible file using buckygen
+        #Create unreadable file using buckygen
         os.system(path_buckygen + " " + str(int(n/2 + 2)) + " " + path_database + "/C" + str(n) + "_dual >/dev/null 2>&1");
         
-        #Gzip the unreadible file
+        #Gzip the unreadable file
         os.system("cd " + path_database + "; gzip C" + str(n) + "_dual");
         print(str(n) + " done.")
     
-    #In case the readible file needs to remain
+    #In case the readable file needs to remain
     if readable:
-        #Check whether readile file already exists
+        #Check whether readable file already exists
         if os.path.exists(path_database + "/C" + str(n) + "_dual_read"):
             print("Requested file does already exist in " + path_database)
         else:
@@ -748,6 +880,14 @@ def run_bucky_planarread(n, dual = True, readable = False):
     return
 
 def import_Cn(n):
+    '''
+    #####TODO
+    Parameters:
+        n (int)
+
+    Returns:
+        A_tensor (numpy.ndarray)
+    '''    
     m = int(n / 2 + 2)
     #If the readible file does not exist yet, run the planarread algorithm
     if not os.path.exists(path_database + "/C" + str(n) + "_dual_read"):
@@ -768,7 +908,13 @@ def import_Cn(n):
     return A_tensor
 
 def pentagon_cluster(A):
-    # Input must be a two--dimensional matrix, not a tensor
+    '''
+    Parameters:
+        A (numpy.ndarray): Must be a two--dimensional matrix, not a tensor.
+
+    Returns:
+        numpy.ndarray: #####TODO
+    '''
     m = A.shape[0]
     pentagon_indices = np.where(np.sum(A,axis = 0) == 5)[0]
     A5 = A[pentagon_indices,:]
@@ -776,8 +922,17 @@ def pentagon_cluster(A):
     A5 = nx.Graph(A5)
     return [len(c) for c in sorted(nx.connected_components(A5), key=len, reverse=True)]
 
-###Compute all partitions of a given number n
 def partitions_yield(n):
+    '''
+    Compute all partitions of a given number n.
+
+    Parameters:
+        n (int)
+
+    Yields:
+        numpy.ndarray: Partitions of n.
+
+    '''
     a = [0 for i in range(n + 1)]
     k = 1
     y = n - 1
@@ -800,6 +955,15 @@ def partitions_yield(n):
         yield tuple(a[: k + 1])
 
 def partitions(p):
+    '''
+    Compute a sorted collection of all possible partitions of p.
+
+    Parameters:
+        p (int)
+
+    Returns:
+        result (numpy.nparray)
+    '''
     temp = list(set(partitions_yield(p)))
     num = len(temp)
     result = np.zeros((num,p))
@@ -808,9 +972,16 @@ def partitions(p):
         result[i,0:len(temp2)] = temp2
     return result[result[:, 0].argsort()]
     
-###Compute the sizes of all pentagonal clusters for a given (dual) fullerene represented by adjacency matrix A
 def pentagon_cluster(A):
-    # Input must be a two--dimensional matrix, not a tensor
+    '''
+    Compute the sizes of all pentagonal clusters for a given (dual) fullerene represented by adjacency matrix A.
+
+    Parameters:
+        A (numpy.ndarray): Must be a two--dimensional matrix, not a tensor.
+
+    Returns:
+        result (numpy.ndarray)
+    '''
     m = A.shape[0]
     pentagon_indices = np.where(np.sum(A,axis = 0) == 5)[0]
     A5 = A[pentagon_indices,:]
@@ -821,13 +992,30 @@ def pentagon_cluster(A):
     result[0:len(temp)] = temp
     return result
     
-###For a given partition and a partition table, find the table's row in which the partition can be found
 def find_partition(part,part_table):
+    '''
+    For a given partition and a partition table, find the table's row in which the partition can be found
+
+    Parameters:
+        part (numpy.ndarray)
+        part_table (numpy.ndarray)
+
+    Returns:
+        int: The row-number of the partition in the table.
+    '''
     n = len(part)
     return np.where(np.sum(part_table[:,0:n]==part,axis=1)==n)[0][0]
 
-###Compute the frequency of all partitions of 12 occuring in Cn
 def partition_freq(n):
+    '''
+    Compute the frequency of all partitions of 12 occuring in Cn.
+
+    Parameters:
+        n (int)
+
+    Returns:
+        result (numpy.ndarray): A vector containing all frequencies.
+    '''
     pt = partitions(12)
     result = np.zeros(pt.shape[0])
     A_tensor = import_Cn(n)
@@ -840,7 +1028,7 @@ def partition_freq(n):
 
 def radial_gSW_segments(A):
     '''
-    Computes the indices of vertices of the fragment needed for a radial gSW operation
+    Compute the indices of vertices of the fragment needed for a radial gSW operation
     according to "Generalized Stone-Wales Transformation for Fullerene Graphs Derived from Berge’s Switching Theorem" by Ori et al.
 
     Input: 
@@ -924,4 +1112,94 @@ def radial_gSW_segments(A):
 
 
 ########################################## Character of fullerenes ###########################################################################
- 
+def character(A, alpha = 1, beta = 1/2):
+    '''
+    Compute the character of A.
+
+    Parameters: 
+        -A: A matrix.
+        -alpha (optional int or float): Default value is 1.
+        -beta (optional int or float): Default value is 1/2.
+
+    Returns:
+        The character of A.
+    '''
+    D = np.diag(np.sum(A,axis=0))
+    return np.trace(expm(alpha*A + beta*D))
+
+
+def adjacencyTn6(A):
+    '''
+    Compute the adjacency matrix of the hexagonal subgraph Tn6 of Tn, which is the dual graph of the fullerene A.
+
+    Parameters:
+        -A: A matrix.
+
+    Returns:
+        -A6: The adjacency matrix of Tn6.
+    '''
+    hexagon_indices = np.where(np.sum(A,axis=0)==6)[0]
+    A6 = A[hexagon_indices,:]
+    A6 = A6[:,hexagon_indices]
+    return A6
+
+
+#####TODO: Tun die folgenden Funktionen das gleiche wie run_bucky_planarread im Abschnitt Pentagon Cluster Analysis?
+def run_buckygen(n):
+    '''
+    Run buckygen using the terminal and create a (unreadable) file "Cn_dual" in the folder "fullerene_data" given by path_database.
+    
+    Parameters: 
+        n: A feasible integer, i.e., n is even and (22 <= n or n = 20).
+    '''
+    m = int(n / 2 + 2)
+    os.system('wsl ~ -e sh -c "cd '+ path_program +'; ./buckygen '+ str(m) +' '+ path_database +'/C'+ str(n) +'_dual"')
+    print("Buckygen done.")
+
+
+  def run_planarread(n):
+      '''
+      Apply planarread to create Python-readable file.
+      
+      Parameters: 
+          n: A feasible integer.
+      '''
+    m = int(n / 2 + 2)
+    os.system('wsl  ~ -e sh -c "cd '+ path_program +'; ./planarread_mod <'+ path_database +'/C'+ str(n) +'_dual >'+ path_database +'/C'+ str(n) +'_dual_read.txt"')
+    os.system('wsl  ~ -e sh -c "cd '+ path_database +'; rm C'+ str(n) +'_dual')
+    print("Planarread done.")  
+
+
+def readin_planarread(n):
+    '''
+    Read in the previously created planarread-file.
+
+    Parameters:
+        n (int): A feasible integer.
+    '''
+    temp = np.genfromtxt('N:/fullerene_data/C'+str(n)+'_dual_read.txt', usecols=(0, 1, 2, 3, 4, 5), invalid_raise=False)
+    os.system('wsl  ~ -e sh -c "cd '+ path_database +'; rm C'+ str(n) +'_dual_read.txt')
+    print("Import done.")
+    return temp
+
+
+def planarread_to_A_tensor(planarread,m,iso):
+    '''
+    Create A_tensor based on a planarread.
+
+    Parameters:
+        -planarread: #####TODO
+        -m (int): A feasible integer.
+        -iso (int): A feasible integer.
+
+    Returns:
+        A_tensor: An array of dimensions m x m x iso.
+    '''
+    A_tensor = np.zeros((m,m,iso))
+    for i in range(iso):
+        A = planarread[i*m:(i+1)*m,:]
+        for j in range(m):
+            for col in range(6):
+                if A[j,col] != 0:
+                    A_tensor[j,int(A[j,col]-1),i] = 1
+    return A_tensor  
